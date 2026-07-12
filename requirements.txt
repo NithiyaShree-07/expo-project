@@ -1,0 +1,12 @@
+Flask
+gunicorn
+Flask-SQLAlchemy
+Flask-Login
+Flask-WTF
+WTForms
+email-validator
+Werkzeug
+Jinja2
+itsdangerous
+click
+blinker
