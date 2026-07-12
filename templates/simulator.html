@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Smart Waste Segregation Plant (Industrial MRF)</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/simulator.css') }}">
+</head>
+<body>
+<div class="plant-app">
+
+  <!-- ===================== HEADER ===================== -->
+  <header class="app-header">
+    <div class="brand">
+      <button class="btn back-btn" id="btn-back-home" onclick="goBackHome()" title="Back to previous page">
+        <span aria-hidden="true">&larr;</span> Back
+      </button>
+      <div class="brand-mark"></div>
+      <div class="brand-text">
+        <h1>AI Smart Waste Segregation Plant</h1>
+        <span>(INDUSTRIAL MRF) &mdash; MATERIAL RECOVERY SIMULATOR</span>
+      </div>
+    </div>
+    <div class="status-strip">
+      <span><span class="dot"></span>LINE RUNNING</span>
+      <span id="hdr-throughput">THROUGHPUT: 0 items/min</span>
+      <span id="hdr-clock">UPTIME 00:00:00</span>
+    </div>
+  </header>
+
+  <!-- ===================== TABS ===================== -->
+  <div class="tabbar">
+    <button class="tab-btn active" data-view="floor">Plant Floor</button>
+    <button class="tab-btn" data-view="dashboard">IoT Dashboard</button>
+  </div>
+
+  <!-- ===================== PLANT FLOOR VIEW ===================== -->
+  <section class="view active" id="view-floor">
+    <div class="controls-row">
+      <button class="btn primary" id="btn-toggle-run">Pause Line</button>
+      <button class="btn" id="btn-spawn">Feed Item Now</button>
+      <label class="speed-label">Belt Speed
+        <input type="range" id="speed-range" min="0.5" max="3" step="0.1" value="1.4">
+        <span id="speed-val">1.4x</span>
+      </label>
+      <label class="speed-label">Spawn Rate
+        <input type="range" id="rate-range" min="0.4" max="3" step="0.1" value="1.2">
+        <span id="rate-val">1.2/s</span>
+      </label>
+    </div>
+
+    <div class="floor-layout">
+      <div class="panel floor-stage">
+        <div class="panel-title">Line Schematic <span class="tag" id="items-inflight">0 IN TRANSIT</span></div>
+        <svg id="plant-svg" viewBox="0 0 1000 920" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="steelGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#3a4756"/>
+              <stop offset="1" stop-color="#1c242c"/>
+            </linearGradient>
+            <linearGradient id="binGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#232d38"/>
+              <stop offset="1" stop-color="#141a21"/>
+            </linearGradient>
+            <linearGradient id="beltBedGrad" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="920">
+              <stop offset="0" stop-color="#525f6c"/>
+              <stop offset="0.45" stop-color="#2c343d"/>
+              <stop offset="1" stop-color="#171e25"/>
+            </linearGradient>
+            <radialGradient id="rollerGrad" cx="32%" cy="30%" r="75%">
+              <stop offset="0" stop-color="#8b9bad"/>
+              <stop offset="0.45" stop-color="#3c4653"/>
+              <stop offset="1" stop-color="#10151b"/>
+            </radialGradient>
+          </defs>
+
+          <!-- branch labels -->
+          <g class="branch-labels" font-family="IBM Plex Mono" font-size="10" fill="#7d8ea1">
+            <text x="330" y="172">MAG=TRUE (ON)</text>
+            <text x="520" y="235">MAG=FALSE / OFF</text>
+            <text x="330" y="262">LIGHT &#8594; LIFT FORCE</text>
+            <text x="660" y="330">HEAVY &#8594; GRAVITY</text>
+            <text x="60" y="430">INDUSTRIAL</text>
+            <text x="256" y="430">LOW-COST AI</text>
+            <text x="500" y="514">MOISTURE &gt; 35%</text>
+            <text x="500" y="534">YES</text>
+            <text x="720" y="534">NO</text>
+            <text x="640" y="768">GLASS</text>
+            <text x="790" y="768">OTHER / ALUMINUM</text>
+          </g>
+
+          <!-- ============ CONVEYOR BELTS (auto-built by JS from the same
+               coordinates the items travel along, so belts & items always align) ============ -->
+          <g id="belts-layer"></g>
+
+          <!-- ============ EQUIPMENT ============ -->
+          <!-- Hopper -->
+          <g class="node equip" id="node-hopper" transform="translate(500,18)">
+            <path class="hopper-body" d="M-95,-8 L95,-8 L44,44 L-44,44 Z"/>
+            <path class="hopper-rim" d="M-100,-12 L100,-12 L95,-8 L-95,-8 Z"/>
+            <rect class="waste" x="-58" y="-4" width="16" height="11" rx="2" transform="rotate(-8 -50 1)"/>
+            <rect class="waste" x="-26" y="0" width="13" height="10" rx="2" transform="rotate(6 -19 5)"/>
+            <rect class="waste" x="2" y="-6" width="17" height="11" rx="2" transform="rotate(-4 10 -1)"/>
+            <rect class="waste" x="32" y="-1" width="13" height="10" rx="2" transform="rotate(10 38 4)"/>
+            <rect class="waste" x="56" y="-6" width="15" height="10" rx="2" transform="rotate(-6 63 -1)"/>
+            <text y="66" class="equip-label">FEED HOPPER — MIXED WASTE</text>
+          </g>
+          <text x="500" y="118" class="belt-caption">MAIN CONVEYOR BELT</text>
+
+          <!-- Electromagnet -->
+          <g class="node equip" id="node-electromagnet" transform="translate(500,178)">
+            <circle class="magnet-glow" r="54"/>
+            <path class="magnet-field f1" d="M-44,-6 A44,40 0 0,1 44,-6"/>
+            <path class="magnet-field f2" d="M-30,-6 A30,28 0 0,1 30,-6"/>
+            <rect class="magnet-body" x="-46" y="-15" width="92" height="30" rx="15"/>
+            <text class="pole" x="-32" y="5">N</text>
+            <text class="pole" x="26" y="5">S</text>
+            <text y="42" class="equip-label">ELECTROMAGNET (MAGNETIC DRUM)</text>
+          </g>
+
+          <!-- Metal bin -->
+          <g class="node bin equip" id="node-metalbin" transform="translate(270,268)">
+            <path class="bin-rim" d="M-58,-20 L58,-20 L52,-14 L-52,-14 Z"/>
+            <path class="bin-body" d="M-52,-14 L52,-14 L42,26 L-42,26 Z"/>
+            <line class="bin-corr" x1="-24" y1="-12" x2="-19" y2="23"/>
+            <line class="bin-corr" x1="0" y1="-13" x2="0" y2="24"/>
+            <line class="bin-corr" x1="24" y1="-12" x2="19" y2="23"/>
+            <text y="46" class="equip-label">METAL COLLECTION BIN</text>
+          </g>
+
+          <!-- Air blower -->
+          <g class="node equip" id="node-airblower" transform="translate(650,268)">
+            <rect class="blower-chamber" x="-72" y="-30" width="144" height="58" rx="8"/>
+            <g class="fan" transform="translate(0,0)">
+              <circle class="fan-hub" r="17"/>
+              <path class="fan-blade" d="M0,0 L0,-15 A15,15 0 0,1 13,-7 Z"/>
+              <path class="fan-blade" d="M0,0 L13,-7 A15,15 0 0,1 13,7 Z"/>
+              <path class="fan-blade" d="M0,0 L13,7 A15,15 0 0,1 0,15 Z"/>
+              <path class="fan-blade" d="M0,0 L0,15 A15,15 0 0,1 -13,7 Z"/>
+              <path class="fan-blade" d="M0,0 L-13,7 A15,15 0 0,1 -13,-7 Z"/>
+              <path class="fan-blade" d="M0,0 L-13,-7 A15,15 0 0,1 0,-15 Z"/>
+            </g>
+            <path class="air-chevron" d="M-58,10 L-52,0 L-46,10" transform="translate(0,-16)"/>
+            <path class="air-chevron a2" d="M-58,10 L-52,0 L-46,10" transform="translate(0,-16)"/>
+            <path class="air-chevron" d="M46,10 L52,0 L58,10" transform="translate(0,-16)"/>
+            <path class="air-chevron a2" d="M46,10 L52,0 L58,10" transform="translate(0,-16)"/>
+            <text y="45" class="equip-label">AIR BLOWER CHAMBER</text>
+          </g>
+
+          <!-- Conveyor A / B captions -->
+          <text x="190" y="335" class="belt-caption">CONVEYOR A — LIGHT STREAM</text>
+          <text x="650" y="335" class="belt-caption">CONVEYOR B — HEAVY STREAM</text>
+
+          <!-- Mode selector (rail switch) -->
+          <g class="node equip fork" id="node-modeselector" transform="translate(190,436)">
+            <path class="fork-track" d="M0,-40 L0,-4"/>
+            <path class="fork-blade" d="M0,-4 L-58,10"/>
+            <path class="fork-blade" d="M0,-4 L58,10"/>
+            <circle class="fork-hinge" r="7"/>
+            <text y="-48" class="equip-label">MODE SELECTOR</text>
+          </g>
+
+          <!-- NIR / Capacitive sensor gantries -->
+          <g class="node equip sensor" id="node-nir" transform="translate(90,516)">
+            <path class="gantry" d="M-44,-18 L-44,10 M44,-18 L44,10 M-44,-18 L44,-18"/>
+            <circle class="lens" cy="-18" r="6"/>
+            <path class="scan-beam" d="M0,-12 L-15,22 L15,22 Z"/>
+            <text y="-26" class="equip-label">NIR SPECTROSCOPIC SENSOR</text>
+          </g>
+          <g class="node equip sensor" id="node-cap" transform="translate(300,516)">
+            <path class="gantry" d="M-44,-18 L-44,10 M44,-18 L44,10 M-44,-18 L44,-18"/>
+            <circle class="lens" cy="-18" r="6"/>
+            <path class="scan-beam" d="M0,-12 L-15,22 L15,22 Z"/>
+            <text y="-26" class="equip-label">CAPACITIVE · LOAD CELL · COLOR</text>
+          </g>
+
+          <!-- AI classifier -->
+          <g class="node equip chip" id="node-classifier" transform="translate(190,600)">
+            <rect class="chip-body" x="-34" y="-19" width="68" height="38" rx="6"/>
+            <line class="chip-pin" x1="-34" y1="-10" x2="-44" y2="-10"/>
+            <line class="chip-pin" x1="-34" y1="10" x2="-44" y2="10"/>
+            <line class="chip-pin" x1="34" y1="-10" x2="44" y2="-10"/>
+            <line class="chip-pin" x1="34" y1="10" x2="44" y2="10"/>
+            <circle class="chip-led" r="5"/>
+            <text y="-32" class="equip-label">AI CLASSIFIER</text>
+          </g>
+
+          <!-- Servo gate A -->
+          <g class="node equip gate" id="node-servoA" transform="translate(190,680)">
+            <path class="gate-chute" d="M-8,2 L-42,32"/>
+            <path class="gate-chute" d="M8,2 L42,32"/>
+            <g class="flap"><rect x="-4" y="-34" width="8" height="34" rx="3"/></g>
+            <circle class="gate-hinge" r="6"/>
+            <text y="-42" class="equip-label">SERVO GATE A</text>
+          </g>
+
+          <!-- Plastic / Paper bins -->
+          <g class="node bin equip" id="node-plasticbin" transform="translate(110,780)">
+            <path class="bin-rim" d="M-44,-19 L44,-19 L39,-13 L-39,-13 Z"/>
+            <path class="bin-body" d="M-39,-13 L39,-13 L31,25 L-31,25 Z"/>
+            <line class="bin-corr" x1="0" y1="-12" x2="0" y2="23"/>
+            <text y="45" class="equip-label">PLASTIC BIN</text>
+          </g>
+          <g class="node bin equip" id="node-paperbin" transform="translate(280,780)">
+            <path class="bin-rim" d="M-44,-19 L44,-19 L39,-13 L-39,-13 Z"/>
+            <path class="bin-body" d="M-39,-13 L39,-13 L31,25 L-31,25 Z"/>
+            <line class="bin-corr" x1="0" y1="-12" x2="0" y2="23"/>
+            <text y="45" class="equip-label">PAPER BIN</text>
+          </g>
+
+          <!-- Moisture sensor -->
+          <g class="node equip sensor" id="node-moisture" transform="translate(650,436)">
+            <path class="gantry" d="M-58,-18 L-58,10 M58,-18 L58,10 M-58,-18 L58,-18"/>
+            <path class="droplet" d="M0,-20 C7,-10 12,-3 12,4 A12,12 0 1,1 -12,4 C-12,-3 -7,-10 0,-20 Z"/>
+            <text y="-26" class="equip-label">MOISTURE &amp; TEMP SENSOR</text>
+          </g>
+          <!-- Moisture check gate -->
+          <g class="node equip gate" id="node-moisturecheck" transform="translate(650,520)">
+            <path class="gate-chute" d="M-8,2 L-64,2"/>
+            <path class="gate-chute" d="M8,2 L64,2"/>
+            <g class="flap"><rect x="-4" y="-34" width="8" height="34" rx="3"/></g>
+            <circle class="gate-hinge" r="6"/>
+            <text y="-42" class="equip-label">MOISTURE &gt; 35% ?</text>
+          </g>
+          <g class="node bin equip" id="node-organicbin" transform="translate(560,608)">
+            <path class="bin-rim" d="M-46,-19 L46,-19 L40,-13 L-40,-13 Z"/>
+            <path class="bin-body" d="M-40,-13 L40,-13 L32,25 L-32,25 Z"/>
+            <line class="bin-corr" x1="0" y1="-12" x2="0" y2="23"/>
+            <text y="45" class="equip-label">ORGANIC BIN</text>
+          </g>
+          <g class="node equip sensor" id="node-glassdetector" transform="translate(770,608)">
+            <path class="gantry" d="M-58,-18 L-58,10 M58,-18 L58,10 M-58,-18 L58,-18"/>
+            <circle class="lens" cy="-18" r="6"/>
+            <path class="scan-beam" d="M0,-12 L-18,22 L18,22 Z"/>
+            <text y="-26" class="equip-label">GLASS &amp; NON-MAG DETECTOR</text>
+          </g>
+          <g class="node equip chip" id="node-hardness" transform="translate(770,690)">
+            <rect class="chip-body" x="-40" y="-22" width="80" height="44" rx="6"/>
+            <line class="chip-pin" x1="-40" y1="-12" x2="-50" y2="-12"/>
+            <line class="chip-pin" x1="-40" y1="12" x2="-50" y2="12"/>
+            <line class="chip-pin" x1="40" y1="-12" x2="50" y2="-12"/>
+            <line class="chip-pin" x1="40" y1="12" x2="50" y2="12"/>
+            <circle class="chip-led" r="5"/>
+            <text y="-32" class="equip-label">HARDNESS · DENSITY AI MODEL</text>
+          </g>
+          <g class="node equip gate" id="node-servoB" transform="translate(770,772)">
+            <path class="gate-chute" d="M-8,2 L-38,32"/>
+            <path class="gate-chute" d="M8,2 L58,32"/>
+            <g class="flap"><rect x="-4" y="-34" width="8" height="34" rx="3"/></g>
+            <circle class="gate-hinge" r="6"/>
+            <text y="-42" class="equip-label">SERVO GATE B</text>
+          </g>
+          <g class="node bin equip" id="node-glassbin" transform="translate(680,868)">
+            <path class="bin-rim" d="M-44,-19 L44,-19 L39,-13 L-39,-13 Z"/>
+            <path class="bin-body" d="M-39,-13 L39,-13 L31,25 L-31,25 Z"/>
+            <line class="bin-corr" x1="0" y1="-12" x2="0" y2="23"/>
+            <text y="45" class="equip-label">GLASS BIN</text>
+          </g>
+          <g class="node bin equip" id="node-rejectbin" transform="translate(870,868)">
+            <path class="bin-rim" d="M-58,-19 L58,-19 L52,-13 L-52,-13 Z"/>
+            <path class="bin-body" d="M-52,-13 L52,-13 L42,25 L-42,25 Z"/>
+            <line class="bin-corr" x1="-22" y1="-12" x2="-18" y2="23"/>
+            <line class="bin-corr" x1="22" y1="-12" x2="18" y2="23"/>
+            <text y="45" class="equip-label">REJECT / NON-MAG METAL</text>
+          </g>
+
+          <!-- moving items are injected here by JS -->
+          <g id="items-layer"></g>
+        </svg>
+        <div class="scanline"></div>
+
+        <div class="legend">
+          <span class="item"><span class="sw" style="background:#ffb02e"></span>Metal</span>
+          <span class="item"><span class="sw" style="background:#34d6ff"></span>Plastic</span>
+          <span class="item"><span class="sw" style="background:#eef2f5"></span>Paper</span>
+          <span class="item"><span class="sw" style="background:#4ee08a"></span>Organic</span>
+          <span class="item"><span class="sw" style="background:#b48cff"></span>Glass</span>
+          <span class="item"><span class="sw" style="background:#ff5d5d"></span>Aluminum / Reject</span>
+        </div>
+      </div>
+
+      <!-- side column -->
+      <div class="side-col" style="display:flex; flex-direction:column; gap:16px;">
+        <div class="panel xai-card">
+          <div class="panel-title">Explainable AI <span class="tag">LIVE</span></div>
+          <div id="xai-content">
+            <div class="xai-empty">Waiting for the first item to reach a classification stage&hellip;</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Bin Totals</div>
+          <div class="bin-strip">
+            <div class="bin-card metal"><div class="label">Metal</div><div class="count" id="count-metal">0</div></div>
+            <div class="bin-card plastic"><div class="label">Plastic</div><div class="count" id="count-plastic">0</div></div>
+            <div class="bin-card paper"><div class="label">Paper</div><div class="count" id="count-paper">0</div></div>
+            <div class="bin-card organic"><div class="label">Organic</div><div class="count" id="count-organic">0</div></div>
+            <div class="bin-card glass"><div class="label">Glass</div><div class="count" id="count-glass">0</div></div>
+            <div class="bin-card reject"><div class="label">Reject</div><div class="count" id="count-reject">0</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== DASHBOARD VIEW ===================== -->
+  <section class="view" id="view-dashboard">
+    <div class="dash-grid">
+
+      <div class="telemetry-card">
+        <div class="telemetry-head"><span>Belt Motor RPM</span><span>NOMINAL 1200</span></div>
+        <div class="telemetry-value" id="tm-rpm">0<span class="unit">rpm</span></div>
+        <div class="telemetry-track"><div class="telemetry-fill" id="tm-rpm-fill" style="background:var(--cyan)"></div></div>
+      </div>
+
+      <div class="telemetry-card">
+        <div class="telemetry-head"><span>Motor Temperature</span><span>LIMIT 85&deg;C</span></div>
+        <div class="telemetry-value" id="tm-temp">0<span class="unit">&deg;C</span></div>
+        <div class="telemetry-track"><div class="telemetry-fill" id="tm-temp-fill" style="background:var(--amber)"></div></div>
+      </div>
+
+      <div class="telemetry-card">
+        <div class="telemetry-head"><span>Power Draw</span><span>RATED 18kW</span></div>
+        <div class="telemetry-value" id="tm-power">0<span class="unit">kW</span></div>
+        <div class="telemetry-track"><div class="telemetry-fill" id="tm-power-fill" style="background:var(--green)"></div></div>
+      </div>
+
+      <div class="telemetry-card">
+        <div class="telemetry-head"><span>Air Blower Flow</span><span>MAX 400</span></div>
+        <div class="telemetry-value" id="tm-airflow">0<span class="unit">m&sup3;/h</span></div>
+        <div class="telemetry-track"><div class="telemetry-fill" id="tm-airflow-fill" style="background:var(--violet)"></div></div>
+      </div>
+
+      <div class="telemetry-card">
+        <div class="telemetry-head"><span>Stream Moisture</span><span>THRESHOLD 35%</span></div>
+        <div class="telemetry-value" id="tm-moisture">0<span class="unit">%</span></div>
+        <div class="telemetry-track"><div class="telemetry-fill" id="tm-moisture-fill" style="background:var(--cyan)"></div></div>
+      </div>
+
+      <div class="telemetry-card">
+        <div class="telemetry-head"><span>Servo Gate Position</span><span>A / B</span></div>
+        <div class="telemetry-value" id="tm-servo">0<span class="unit">&deg;</span></div>
+        <div class="telemetry-track"><div class="telemetry-fill" id="tm-servo-fill" style="background:var(--amber)"></div></div>
+      </div>
+
+      <div class="telemetry-card full-span">
+        <div class="panel-title" style="margin-bottom:14px;">Classifier Configuration</div>
+        <div class="mode-switch-row">
+          <div class="mode-toggle" id="mode-toggle">
+            <button class="active" data-mode="industrial">Industrial NIR</button>
+            <button data-mode="lowcost">Low-Cost AI Fusion</button>
+          </div>
+
+          <select class="model-select" id="model-select">
+            <option value="rf">Random Forest</option>
+            <option value="xgb">XGBoost</option>
+            <option value="dt">Decision Tree</option>
+            <option value="nn">Neural Net</option>
+          </select>
+
+          <span class="accuracy-readout">Est. Accuracy: <b id="model-accuracy">96.4%</b></span>
+          <span class="accuracy-readout">Inference: <b id="model-latency">14ms</b></span>
+        </div>
+        <div class="mini-note">Mode and model selection affect classifier confidence and feature weighting shown below and on the Plant Floor's Explainable AI card.</div>
+      </div>
+
+      <div class="telemetry-card full-span">
+        <div class="panel-title">Live Feature Importance <span class="tag" id="fbars-source-tag">AWAITING ITEM</span></div>
+        <div class="fbars-dash" id="fbars-dash">
+          <!-- populated by JS -->
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+</div>
+<script src="{{ url_for('static', filename='js/simulator.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Smart Waste Management & Circular Economy Platform</title>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Main Style Sheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+    <!-- ==================== ROLE SELECTION / ENTRANCE SCREEN ==================== -->
+    <div id="roleSelectionScreen" class="role-selection-container">
+        <div class="auth-header">
+            <h1>AI SMART WASTE MANAGEMENT PLATFORM</h1>
+            <p>"Waste to Wealth using AI & IoT"</p>
+        </div>
+        
+        <div class="roles-grid">
+            <div class="role-card admin-role-card" onclick="openLoginModal('admin')">
+                <div class="role-icon"><i class="fa-solid fa-user-tie"></i></div>
+                <h2>ADMIN PORTAL</h2>
+                <p>Municipality / Recycling Management</p>
+            </div>
+            
+            <div class="role-card citizen-role-card" onclick="openLoginModal('citizen')">
+                <div class="role-icon"><i class="fa-solid fa-users"></i></div>
+                <h2>CITIZEN PORTAL</h2>
+                <p>Public / Customers / Marketplace</p>
+            </div>
+        </div>
+
+        <div style="margin-top: 3rem; text-align: center;">
+            <a href="/simulator" target="_blank" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.5rem; width: auto; padding: 0.6rem 1.2rem;">
+                <i class="fa-solid fa-industry"></i> Open AI Smart Waste Segregation Plant (Industrial MRF) Simulator
+            </a>
+        </div>
+    </div>
+
+    <!-- ==================== LOGIN MODAL ==================== -->
+    <div id="loginModal" class="login-modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeLoginModal()">&times;</button>
+            <div class="modal-header">
+                <h3 id="modalRoleTitle">Admin Login</h3>
+                <p id="modalRoleDesc">Enter credentials to access waste management system</p>
+            </div>
+            
+            <form id="loginForm" onsubmit="handleLoginSubmit(event)">
+                <input type="hidden" id="loginRole" value="admin">
+                
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" class="form-control" placeholder="e.g., admin" required>
+                </div>
+                
+                <div class="form-group" id="passwordGroup">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" class="form-control" placeholder="••••••••">
+                    <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">Use password: <strong>admin123</strong></p>
+                </div>
+                
+                <button type="submit" class="btn">Access Portal</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== MAIN PLATFORM INTERFACE ==================== -->
+    <div id="appInterface" class="app-container" style="display: none;">
+        
+        <!-- SIDEBAR NAVIGATION -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <i class="fa-solid fa-recycle brand-icon"></i>
+                <span class="brand-text">AI Smart Waste</span>
+            </div>
+            
+            <div class="sidebar-user">
+                <div class="user-avatar" id="avatarLetter">A</div>
+                <div class="user-info">
+                    <div class="user-name" id="profileName">Admin User</div>
+                    <div class="user-role" id="profileRole">Municipality Admin</div>
+                </div>
+            </div>
+            
+            <!-- ADMIN MENU -->
+            <ul class="sidebar-menu" id="adminMenu">
+                <li class="menu-item active" data-tab="admin-dashboard">
+                    <a class="menu-link"><i class="fa-solid fa-chart-line"></i><span>Dashboard</span></a>
+                </li>
+                <li class="menu-item" data-tab="smart-bins">
+                    <a class="menu-link"><i class="fa-solid fa-dumpster"></i><span>Smart Bin Center</span></a>
+                </li>
+                <li class="menu-item" data-tab="waste-segregation">
+                    <a class="menu-link"><i class="fa-solid fa-arrows-split-up-and-left"></i><span>Segregation Center</span></a>
+                </li>
+                <li class="menu-item" data-tab="recovery-advisor">
+                    <a class="menu-link"><i class="fa-solid fa-lightbulb"></i><span>Recovery Advisor</span></a>
+                </li>
+                <li class="menu-item" data-tab="circular-economy">
+                    <a class="menu-link"><i class="fa-solid fa-arrows-spin"></i><span>Circular Economy</span></a>
+                </li>
+                <li class="menu-item" data-tab="marketplace-mgmt">
+                    <a class="menu-link"><i class="fa-solid fa-shop"></i><span>Marketplace Mgmt</span></a>
+                </li>
+                <li class="menu-item" data-tab="selling-requests">
+                    <a class="menu-link"><i class="fa-solid fa-hand-holding-dollar"></i><span>Citizen Requests</span><span class="nav-badge" id="badgeSelling">0</span></a>
+                </li>
+                <li class="menu-item" data-tab="complaints-mgmt">
+                    <a class="menu-link"><i class="fa-solid fa-circle-exclamation"></i><span>Complaints</span><span class="nav-badge" id="badgeComplaints">0</span></a>
+                </li>
+                <li class="menu-item" data-tab="analytics-center">
+                    <a class="menu-link"><i class="fa-solid fa-chart-pie"></i><span>Analytics Trend</span></a>
+                </li>
+                <li class="menu-item" data-tab="decision-support">
+                    <a class="menu-link"><i class="fa-solid fa-brain"></i><span>AI Decision Log</span></a>
+                </li>
+                <li style="margin-top: auto; padding: 0.5rem 1rem;">
+                    <a class="menu-link" onclick="logout()" style="color: var(--accent-rose);"><i class="fa-solid fa-right-from-bracket"></i><span>Logout</span></a>
+                </li>
+            </ul>
+
+            <!-- CITIZEN MENU -->
+            <ul class="sidebar-menu" id="citizenMenu" style="display: none;">
+                <li class="menu-item active" data-tab="citizen-dashboard">
+                    <a class="menu-link"><i class="fa-solid fa-house"></i><span>Home Dashboard</span></a>
+                </li>
+                <li class="menu-item" data-tab="citizen-complaint">
+                    <a class="menu-link"><i class="fa-solid fa-bullhorn"></i><span>File Complaint</span></a>
+                </li>
+                <li class="menu-item" data-tab="citizen-selling">
+                    <a class="menu-link"><i class="fa-solid fa-sack-dollar"></i><span>Sell Waste</span></a>
+                </li>
+                <li class="menu-item" data-tab="citizen-marketplace">
+                    <a class="menu-link"><i class="fa-solid fa-store"></i><span>Eco Marketplace</span></a>
+                </li>
+                <li class="menu-item" data-tab="citizen-bot">
+                    <a class="menu-link"><i class="fa-solid fa-robot"></i><span>AI Chatbot Helper</span></a>
+                </li>
+                <li style="margin-top: auto; padding: 0.5rem 1rem;">
+                    <a class="menu-link" onclick="logout()" style="color: var(--accent-rose);"><i class="fa-solid fa-right-from-bracket"></i><span>Logout</span></a>
+                </li>
+            </ul>
+        </aside>
+
+        <!-- MAIN VIEWPORT -->
+        <main class="main-content">
+            
+            <!-- TOP BAR -->
+            <div class="header-bar">
+                <div class="header-title">
+                    <button class="btn btn-secondary" id="backTabBtn" onclick="goBackTab()" style="width: auto; padding: 0.5rem 0.9rem; display: none; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem;" title="Back to previous section">
+                        <i class="fa-solid fa-arrow-left"></i> Back
+                    </button>
+                    <h2 id="viewTitle">Dashboard Overview</h2>
+                    <p id="viewDesc">Live metrics of city-wide circular operations</p>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-secondary" onclick="triggerDbRefresh()" style="width: auto; padding: 0.5rem 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fa-solid fa-rotate"></i> Sync Data
+                    </button>
+                    <span id="livePulse" class="badge low" style="padding: 0.5rem; display: flex; align-items: center; gap: 0.4rem;">
+                        <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background-color:var(--accent-green); animation: pulse 1.5s infinite;"></span> Live Backend
+                    </span>
+                </div>
+            </div>
+
+            <!-- ==================== ADMIN: DASHBOARD PANEL ==================== -->
+            <div id="admin-dashboard" class="tab-panel active">
+                <!-- KPI Summary Cards -->
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-icon-wrapper green"><i class="fa-solid fa-dumpster"></i></div>
+                        <div class="kpi-details">
+                            <div class="kpi-value" id="kpiTotalBins">0</div>
+                            <div class="kpi-label">Total Smart Bins</div>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon-wrapper green"><i class="fa-solid fa-circle-check"></i></div>
+                        <div class="kpi-details">
+                            <div class="kpi-value" id="kpiOnlineBins">0</div>
+                            <div class="kpi-label">Online Bins</div>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon-wrapper rose"><i class="fa-solid fa-circle-xmark"></i></div>
+                        <div class="kpi-details">
+                            <div class="kpi-value" id="kpiOfflineBins">0</div>
+                            <div class="kpi-label">Offline Bins</div>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon-wrapper blue"><i class="fa-solid fa-truck-ramp-box"></i></div>
+                        <div class="kpi-details">
+                            <div class="kpi-value" id="kpiTodayCollected">0 kg</div>
+                            <div class="kpi-label">Total Waste Collected</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="kpi-grid" style="margin-top: 1.5rem;">
+                    <div class="kpi-card">
+                        <div class="kpi-icon-wrapper rose"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                        <div class="kpi-details">
+                            <div class="kpi-value" id="kpiComplaints">0</div>
+                            <div class="kpi-label">Pending Complaints</div>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon-wrapper amber"><i class="fa-solid fa-money-bill-transfer"></i></div>
+                        <div class="kpi-details">
+                            <div class="kpi-value" id="kpiSellingReqs">0</div>
+                            <div class="kpi-label">Pending Sales</div>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon-wrapper green"><i class="fa-solid fa-indian-rupee-sign"></i></div>
+                        <div class="kpi-details">
+                            <div class="kpi-value" id="kpiRevenue">₹0</div>
+                            <div class="kpi-label">Market Revenue</div>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon-wrapper blue"><i class="fa-solid fa-seedling"></i></div>
+                        <div class="kpi-details">
+                            <div class="kpi-value" id="kpiCo2Saved">0 kg</div>
+                            <div class="kpi-label">CO₂ Reduced</div>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon-wrapper green"><i class="fa-solid fa-arrows-spin"></i></div>
+                        <div class="kpi-details">
+                            <div class="kpi-value" id="kpiCircularScore">0%</div>
+                            <div class="kpi-label">Circular Score</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Section -->
+                <div class="charts-grid" style="margin-top: 1.5rem;">
+                    <div class="card-box">
+                        <div class="card-title-bar">
+                            <h3>Daily Waste Collection & Fuel Consumption Trends</h3>
+                            <i class="fa-solid fa-chart-line text-secondary"></i>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="dailyCollectionChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="card-box">
+                        <div class="card-title-bar">
+                            <h3>Current Waste Composition Breakdown</h3>
+                            <i class="fa-solid fa-chart-pie text-secondary"></i>
+                        </div>
+                        <div class="chart-container" style="display:flex; align-items:center; justify-content:center;">
+                            <canvas id="compositionDonutChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== ADMIN: MODULE 1: SMART BIN COLLECTION CENTER ==================== -->
+            <div id="smart-bins" class="tab-panel">
+                <div class="bins-list-container">
+                    
+                    <!-- Left: Bins overview & routing -->
+                    <div class="flex-column-gap">
+                        <div class="card-box">
+                            <div class="card-title-bar">
+                                <h3>Smart Bins Real-Time Status</h3>
+                                <span class="badge low">ESP32 Feed Active</span>
+                            </div>
+                            <div class="table-wrapper">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Bin ID</th>
+                                            <th>Location</th>
+                                            <th>Fill %</th>
+                                            <th>Battery</th>
+                                            <th>AI Overflow Forecast</th>
+                                            <th>AI Priority Score</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="binsTableBody">
+                                        <!-- Dynamic rows -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Routing timeline list -->
+                        <div class="card-box">
+                            <div class="card-title-bar">
+                                <h3>AI Optimized Collection Route Plan</h3>
+                                <span class="badge low" id="routeSavingsLabel">0L fuel saved</span>
+                            </div>
+                            <p style="font-size:0.85rem; color:var(--text-secondary);">
+                                Calculated dynamically by analyzing bin priorities, coordinates, and pending emergency overflow reports.
+                            </p>
+                            <div class="timeline" id="routeTimeline">
+                                <!-- Dynamic Stops -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Map visualizer & routing coordinates -->
+                    <div class="flex-column-gap">
+                        <div class="card-box">
+                            <div class="card-title-bar">
+                                <h3>Live Route Map (GPS Sim)</h3>
+                                <i class="fa-solid fa-map-location-dot"></i>
+                            </div>
+                            <div class="map-simulation-box">
+                                <svg class="map-svg" id="mapSvg">
+                                    <!-- Dynamic Map items (roads, lines, marker pins) -->
+                                </svg>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Stops to Collect:</span>
+                                <span class="detail-val" id="routeStopsCount">0 Bins</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Estimated Collection Time:</span>
+                                <span class="detail-val" id="routeEstTime">0 mins</span>
+                            </div>
+                            <div class="detail-row" style="border-bottom:none;">
+                                <span class="detail-label">Route Environmental savings:</span>
+                                <span class="detail-val" id="routeCarbonSaved" style="color:var(--accent-green);">0 kg CO₂</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== ADMIN: MODULE 2: AI WASTE SEGREGATION CENTER ==================== -->
+            <div id="waste-segregation" class="tab-panel">
+                <div class="grid-2col">
+                    
+                    <!-- Simulator details -->
+                    <div class="card-box">
+                        <div class="card-title-bar">
+                            <h3>AI Segregation Simulator (Opto-Mechanical Simulation)</h3>
+                            <i class="fa-solid fa-robot"></i>
+                        </div>
+                        <p style="font-size:0.85rem; color:var(--text-secondary);">
+                            Since the sorting hardware segregates waste automatically via conveyor belts, the AI engine performs immediate opto-chemical analysis simulation on collected materials.
+                        </p>
+                        
+                        <div class="form-group" style="margin-top:1rem;">
+                            <label>Mixed Waste Input Weight (kg)</label>
+                            <input type="number" id="segregationInputWeight" class="form-control" value="120" min="10" max="1000">
+                        </div>
+                        <button class="btn" onclick="startSegregationSimulation()">Start Classification Scan</button>
+                        
+                        <!-- Animated Scanning Visualizer -->
+                        <div class="segregation-scanner-box" id="scannerBox" style="margin-top:1.5rem;">
+                            <div class="scanner-laser" id="scannerLaser" style="display:none;"></div>
+                            <div class="scanner-item" id="scannerItem">📦</div>
+                            <div class="scanner-title" id="scannerStatus">System Ready to Scan</div>
+                            
+                            <div class="scanner-beam-effects">
+                                <div class="scanner-bin" id="binOrganic">
+                                    <div style="font-size:1.5rem;">🍏</div>
+                                    <div style="font-size:0.75rem; font-weight:600; margin-top:0.25rem;">Organic</div>
+                                </div>
+                                <div class="scanner-bin" id="binPlastic">
+                                    <div style="font-size:1.5rem;">🥤</div>
+                                    <div style="font-size:0.75rem; font-weight:600; margin-top:0.25rem;">Plastic</div>
+                                </div>
+                                <div class="scanner-bin" id="binPaper">
+                                    <div style="font-size:1.5rem;">📄</div>
+                                    <div style="font-size:0.75rem; font-weight:600; margin-top:0.25rem;">Paper</div>
+                                </div>
+                                <div class="scanner-bin" id="binMetal">
+                                    <div style="font-size:1.5rem;">🔩</div>
+                                    <div style="font-size:0.75rem; font-weight:600; margin-top:0.25rem;">Metal</div>
+                                </div>
+                                <div class="scanner-bin" id="binGlass">
+                                    <div style="font-size:1.5rem;">🍾</div>
+                                    <div style="font-size:0.75rem; font-weight:600; margin-top:0.25rem;">Glass</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Prediction Breakdown Charts -->
+                    <div class="flex-column-gap">
+                        <div class="card-box">
+                            <div class="card-title-bar">
+                                <h3>AI Waste Composition Prediction</h3>
+                                <i class="fa-solid fa-chart-column"></i>
+                            </div>
+                            <div class="chart-container" style="min-height:220px;">
+                                <canvas id="segregationBarChart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div class="card-box">
+                            <div class="card-title-bar">
+                                <h3>Periodic Waste Audit & Recovery Metrics</h3>
+                                <i class="fa-solid fa-clipboard-list"></i>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Total Waste Collected in Audit:</span>
+                                <span class="detail-val" id="auditTotalCollected">0 kg</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Total Reusable Recovered Material:</span>
+                                <span class="detail-val" id="auditRecovered" style="color:var(--accent-green);">0 kg</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Residual Dumped in Landfill:</span>
+                                <span class="detail-val" id="auditLandfill" style="color:var(--accent-rose);">0 kg</span>
+                            </div>
+                            <div class="detail-row" style="border-bottom:none;">
+                                <span class="detail-label">Current Audit Recovery Rate:</span>
+                                <span class="detail-val" id="auditRecoveryRate" style="color:var(--accent-green);">86.0%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== ADMIN: MODULE 3: RESOURCE RECOVERY ADVISOR ==================== -->
+            <div id="recovery-advisor" class="tab-panel">
+                <div class="card-box">
+                    <div class="card-title-bar">
+                        <h3>AI Advisor: Recommended Resource Processing Pathways</h3>
+                        <i class="fa-solid fa-graduation-cap"></i>
+                    </div>
+                    <p style="font-size:0.85rem; color:var(--text-secondary);">
+                        The AI advisor recommends custom thermal and mechanical extraction processing methodologies based on feed impurities, optimizing recovery efficiencies and reducing processing costs.
+                    </p>
+                    
+                    <div class="table-wrapper" style="margin-top:1rem;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Material Stream</th>
+                                    <th>Recommended Method</th>
+                                    <th>Recovery Efficiency (%)</th>
+                                    <th>Estimated Processing Cost</th>
+                                    <th>Target Output Item</th>
+                                    <th>Processing Destination</th>
+                                </tr>
+                            </thead>
+                            <tbody id="advisorTableBody">
+                                <!-- Dynamic Rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== ADMIN: MODULE 4: CIRCULAR ECONOMY CENTER ==================== -->
+            <div id="circular-economy" class="tab-panel">
+                <div class="grid-2col">
+                    
+                    <!-- Product Estimation Calculator -->
+                    <div class="card-box">
+                        <div class="card-title-bar">
+                            <h3>Circular Economy Product Estimation</h3>
+                            <i class="fa-solid fa-calculator"></i>
+                        </div>
+                        <p style="font-size:0.85rem; color:var(--text-secondary);">
+                            Evaluate output yields and calculate potential market revenue generated by manufacturing consumer items from specific recycled raw materials.
+                        </p>
+                        
+                        <div class="form-group" style="margin-top:1rem;">
+                            <label>Select Material Feedstock</label>
+                            <select id="circularMaterial" class="form-control" onchange="runCircularEstimation()">
+                                <option value="Plastic">Recycled Plastic</option>
+                                <option value="Organic">Organic Waste</option>
+                                <option value="Paper">Recycled Paper</option>
+                                <option value="Metal">Recycled Metal</option>
+                                <option value="Glass">Recycled Glass</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Input Feedstock Weight (kg)</label>
+                            <input type="number" id="circularWeight" class="form-control" value="120" min="1" oninput="runCircularEstimation()">
+                        </div>
+
+                        <!-- Calculations result box -->
+                        <div style="background-color:var(--bg-primary); border:1px solid var(--border-color); border-radius:var(--border-radius); padding:1rem; margin-top:1rem;">
+                            <div class="detail-row">
+                                <span class="detail-label">Yield Granules/Pulp Output:</span>
+                                <span class="detail-val" id="calcIntermediate">-</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Target Manufactured Product:</span>
+                                <span class="detail-val" id="calcProduct">-</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Quantity Manufactured:</span>
+                                <span class="detail-val" id="calcUnits" style="color:var(--accent-blue); font-weight:700;">-</span>
+                            </div>
+                            <div class="detail-row" style="border-bottom:none;">
+                                <span class="detail-label">Estimated Retail Revenue:</span>
+                                <span class="detail-val" id="calcRevenue" style="color:var(--accent-green); font-size:1.1rem; font-weight:700;">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Carbon Credits Dashboard -->
+                    <div class="card-box">
+                        <div class="card-title-bar">
+                            <h3>Environmental Savings & Carbon Dashboard</h3>
+                            <i class="fa-solid fa-leaf"></i>
+                        </div>
+                        <p style="font-size:0.85rem; color:var(--text-secondary);">
+                            Aggregate metrics summarizing fuel offsets, direct emissions prevented, certified carbon credits generated, and trees saved.
+                        </p>
+                        
+                        <div style="margin-top:1.5rem; display:flex; flex-direction:column; gap:1.25rem;">
+                            <div class="detail-row">
+                                <div style="display:flex; align-items:center; gap:0.5rem;">
+                                    <i class="fa-solid fa-gas-pump" style="color:var(--accent-amber);"></i>
+                                    <span class="detail-label">Route Fuel Offset:</span>
+                                </div>
+                                <span class="detail-val" id="carbonFuelSaved">0 Liters</span>
+                            </div>
+                            <div class="detail-row">
+                                <div style="display:flex; align-items:center; gap:0.5rem;">
+                                    <i class="fa-solid fa-cloud-arrow-down" style="color:var(--accent-blue);"></i>
+                                    <span class="detail-label">CO₂ Prevented from landfill/transport:</span>
+                                </div>
+                                <span class="detail-val" id="carbonCo2Reduced">0 kg</span>
+                            </div>
+                            <div class="detail-row">
+                                <div style="display:flex; align-items:center; gap:0.5rem;">
+                                    <i class="fa-solid fa-certificate" style="color:var(--accent-green);"></i>
+                                    <span class="detail-label">Accredited Carbon Credits Earned:</span>
+                                </div>
+                                <span class="detail-val" id="carbonCredits">0 Credits</span>
+                            </div>
+                            <div class="detail-row" style="border-bottom:none;">
+                                <div style="display:flex; align-items:center; gap:0.5rem;">
+                                    <i class="fa-solid fa-tree" style="color:var(--accent-green);"></i>
+                                    <span class="detail-label">Equivalent Deciduous Trees Saved:</span>
+                                </div>
+                                <span class="detail-val" id="carbonTreesSaved" style="color:var(--accent-green); font-weight:700;">0 Trees</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== ADMIN: MODULE 5: MARKETPLACE MANAGEMENT ==================== -->
+            <div id="marketplace-mgmt" class="tab-panel">
+                <div class="grid-2col">
+                    
+                    <!-- Admin Products CRUD -->
+                    <div class="card-box">
+                        <div class="card-title-bar">
+                            <h3>Recycled Products Catalogue</h3>
+                            <button class="btn" onclick="openAddProductModal()" style="width:auto; padding:0.4rem 0.8rem; font-size:0.8rem;">Add Product</button>
+                        </div>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Category</th>
+                                        <th>Price</th>
+                                        <th>Stock</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="mgmtProductsTableBody">
+                                    <!-- Dynamic rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Marketplace incoming orders panel -->
+                    <div class="card-box">
+                        <div class="card-title-bar">
+                            <h3>Marketplace Customer Orders</h3>
+                            <i class="fa-solid fa-cart-shopping"></i>
+                        </div>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Order ID</th>
+                                        <th>Customer</th>
+                                        <th>Product</th>
+                                        <th>Qty</th>
+                                        <th>Total Price</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="mgmtOrdersTableBody">
+                                    <!-- Dynamic Rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add/Edit Product Modal -->
+            <div id="productCrudModal" class="login-modal">
+                <div class="modal-content">
+                    <button class="close-btn" onclick="closeProductModal()">&times;</button>
+                    <div class="modal-header">
+                        <h3 id="productModalTitle">Add Recycled Product</h3>
+                        <p>Upload clean circular manufactured items</p>
+                    </div>
+                    <form id="productForm" onsubmit="handleProductFormSubmit(event)">
+                        <input type="hidden" id="crudProductId" value="">
+                        
+                        <div class="form-group">
+                            <label>Product Name</label>
+                            <input type="text" id="crudProductName" class="form-control" required placeholder="e.g., Circular Chair">
+                        </div>
+                        <div class="form-group">
+                            <label>Category</label>
+                            <select id="crudProductCategory" class="form-control">
+                                <option value="Chair">Chair</option>
+                                <option value="Bucket">Bucket</option>
+                                <option value="Compost">Compost</option>
+                                <option value="Notebook">Notebook</option>
+                                <option value="Scrap Metal">Scrap Metal</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Price (₹)</label>
+                            <input type="number" id="crudProductPrice" class="form-control" required value="100">
+                        </div>
+                        <div class="form-group">
+                            <label>In-Stock Quantity</label>
+                            <input type="number" id="crudProductStock" class="form-control" required value="50">
+                        </div>
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea id="crudProductDesc" class="form-control" rows="3" placeholder="Description of recycling material used..."></textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn">Save Product</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- ==================== ADMIN: MODULE 6: CITIZEN SELLING REQUESTS ==================== -->
+            <div id="selling-requests" class="tab-panel">
+                <div class="card-box">
+                    <div class="card-title-bar">
+                        <h3>Citizen Recycled Waste Selling Requests</h3>
+                        <span class="badge low">Earn Cashback Loop</span>
+                    </div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Request ID</th>
+                                    <th>Citizen</th>
+                                    <th>Material Type</th>
+                                    <th>Weight (kg)</th>
+                                    <th>Estimated Value</th>
+                                    <th>Pickup Location</th>
+                                    <th>Scheduled Date</th>
+                                    <th>Status</th>
+                                    <th>Assigned Vehicle</th>
+                                    <th>Workflow Operations</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminSellingTableBody">
+                                <!-- Dynamic rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== ADMIN: MODULE 7: COMPLAINT MANAGEMENT ==================== -->
+            <div id="complaints-mgmt" class="tab-panel">
+                <div class="card-box">
+                    <div class="card-title-bar">
+                        <h3>Overflow & Illegal Dumping Reports</h3>
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Complaint ID</th>
+                                    <th>Citizen Name</th>
+                                    <th>Category</th>
+                                    <th>Location</th>
+                                    <th>Description Details</th>
+                                    <th>Date Logged</th>
+                                    <th>Assigned Staff</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminComplaintsTableBody">
+                                <!-- Dynamic rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== ADMIN: MODULE 8: ANALYTICS CENTER ==================== -->
+            <div id="analytics-center" class="tab-panel">
+                <div class="grid-2col">
+                    <div class="card-box">
+                        <div class="card-title-bar">
+                            <h3>Revenue Trends</h3>
+                            <i class="fa-solid fa-chart-line text-secondary"></i>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="revenueTrendChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="card-box">
+                        <div class="card-title-bar">
+                            <h3>Complaint Volume and Resolution Efficiency</h3>
+                            <i class="fa-solid fa-chart-bar text-secondary"></i>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="complaintsTrendChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== ADMIN: MODULE 9: AI DECISION SUPPORT ==================== -->
+            <div id="decision-support" class="tab-panel">
+                <div class="card-box">
+                    <div class="card-title-bar">
+                        <h3>AI Recommendations & Decision Logs</h3>
+                        <i class="fa-solid fa-brain"></i>
+                    </div>
+                    <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:1rem;">
+                        The heuristic model automatically monitors bin parameters, collection speeds, citizens' selling submissions, and schedules additional trucks and flags overflow warnings accordingly.
+                    </p>
+                    
+                    <div id="decisionLogsContainer" style="display:flex; flex-direction:column; gap:1rem;">
+                        <!-- Dynamic decision rows -->
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- ==================== CITIZEN: DASHBOARD PANEL ==================== -->
+            <div id="citizen-dashboard" class="tab-panel">
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-icon-wrapper green"><i class="fa-solid fa-award"></i></div>
+                        <div class="kpi-details">
+                            <div class="kpi-value" id="citRewardPoints">120 pts</div>
+                            <div class="kpi-label">Your Reward Points</div>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon-wrapper blue"><i class="fa-solid fa-truck-pickup"></i></div>
+                        <div class="kpi-details">
+                            <div class="kpi-value" id="citUpcomingPickups">None</div>
+                            <div class="kpi-label">Scheduled Pickups</div>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon-wrapper green"><i class="fa-solid fa-wallet"></i></div>
+                        <div class="kpi-details">
+                            <div class="kpi-value" id="citEarnings">₹900</div>
+                            <div class="kpi-label">Cashback Earnings</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid-2col" style="margin-top:1.5rem;">
+                    <!-- Nearby Smart Bins -->
+                    <div class="card-box">
+                        <div class="card-title-bar">
+                            <h3>Nearby Smart Bins</h3>
+                            <i class="fa-solid fa-location-crosshairs"></i>
+                        </div>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Bin ID</th>
+                                        <th>Location</th>
+                                        <th>Fill Percentage</th>
+                                        <th>Status Indicator</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="citBinsTableBody">
+                                    <!-- Dynamic rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Announcements & Schedule -->
+                    <div class="card-box">
+                        <div class="card-title-bar">
+                            <h3>Municipality Announcements & Schedule</h3>
+                            <i class="fa-solid fa-bullhorn"></i>
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:1rem; font-size:0.9rem;">
+                            <div style="background-color:rgba(16, 185, 129, 0.05); border-left:4px solid var(--accent-green); padding:0.75rem;">
+                                <strong>Mega Recycling Drive!</strong>
+                                <p style="font-size:0.8rem; color:var(--text-secondary); margin-top:0.25rem;">
+                                    Sell plastic or paper this Saturday to earn 2x Reward Points on your submissions!
+                                </p>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Organic Waste Collection:</span>
+                                <span class="detail-val">Mon, Wed, Fri (7:00 AM)</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Dry Recyclable Collection:</span>
+                                <span class="detail-val">Tue, Thu, Sat (8:00 AM)</span>
+                            </div>
+                            <div class="detail-row" style="border-bottom:none;">
+                                <span class="detail-label">Smart Bin Clearing Response:</span>
+                                <span class="detail-val" style="color:var(--accent-green);">Auto-Triggered (>80% Fill)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== CITIZEN: FILE COMPLAINT PORTAL ==================== -->
+            <div id="citizen-complaint" class="tab-panel">
+                <div class="grid-2col">
+                    
+                    <!-- Complaint Submission Form -->
+                    <div class="card-box">
+                        <div class="card-title-bar">
+                            <h3>Report Bin Overflow / Illegal Dumping</h3>
+                            <i class="fa-solid fa-circle-exclamation"></i>
+                        </div>
+                        <form id="complaintForm" onsubmit="submitComplaint(event)">
+                            <div class="form-group">
+                                <label>Category</label>
+                                <select id="compCategory" class="form-control">
+                                    <option value="Overflow">Bin Overflow</option>
+                                    <option value="Illegal Dumping">Illegal Trash Dumping</option>
+                                    <option value="Lost Item">Lost Item in Bin</option>
+                                    <option value="Damaged Bin">Damaged Smart Bin</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Location Area</label>
+                                <select id="compLocation" class="form-control">
+                                    <option value="MG Road">MG Road</option>
+                                    <option value="Market Road">Market Road</option>
+                                    <option value="College Road">College Road</option>
+                                    <option value="Residency Road">Residency Road</option>
+                                    <option value="Indiranagar">Indiranagar</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Detailed Description</label>
+                                <textarea id="compDesc" class="form-control" rows="4" placeholder="Mention bin number if visible or approximate landmark..." required></textarea>
+                            </div>
+                            
+                            <button type="submit" class="btn">Submit Incident Report</button>
+                        </form>
+                    </div>
+
+                    <!-- Complaint Track List -->
+                    <div class="card-box">
+                        <div class="card-title-bar">
+                            <h3>Your Logged Incidents & Resolutions</h3>
+                            <i class="fa-solid fa-list-check"></i>
+                        </div>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Category</th>
+                                        <th>Location</th>
+                                        <th>Staff Assigned</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="citComplaintsTableBody">
+                                    <!-- Dynamic rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== CITIZEN: SELL WASTE PORTAL ==================== -->
+            <div id="citizen-selling" class="tab-panel">
+                <div class="grid-2col">
+                    
+                    <!-- Sell waste submission -->
+                    <div class="card-box">
+                        <div class="card-title-bar">
+                            <h3>Sell dry waste & earn cashback</h3>
+                            <i class="fa-solid fa-coins"></i>
+                        </div>
+                        <form id="sellingForm" onsubmit="submitSellingRequest(event)">
+                            <div class="form-group">
+                                <label>Dry Waste Category</label>
+                                <select id="sellType" class="form-control" onchange="runCitPriceEstimation()">
+                                    <option value="Plastic">Plastic Waste (Cashback: ₹25/kg)</option>
+                                    <option value="Paper">Newspaper / Paper (Cashback: ₹8/kg)</option>
+                                    <option value="Metal">Scrap Iron / Metal (Cashback: ₹60/kg)</option>
+                                    <option value="Organic">Kitchen Food Waste (Cashback: ₹3/kg)</option>
+                                    <option value="Glass">Glass Bottles (Cashback: ₹15/kg)</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Estimated Weight (kg)</label>
+                                <input type="number" id="sellWeight" class="form-control" value="10" min="1" oninput="runCitPriceEstimation()">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Pickup Address</label>
+                                <input type="text" id="sellAddress" class="form-control" required placeholder="Apartment / Lane details...">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Preferred Pickup Date</label>
+                                <input type="date" id="sellDate" class="form-control" required>
+                            </div>
+                            
+                            <div style="background-color:rgba(16, 185, 129, 0.05); padding:1rem; border-radius:var(--border-radius); border:1px solid rgba(16,185,129,0.2); margin-bottom:1.5rem;">
+                                <div class="flex-space-between">
+                                    <span style="font-size:0.9rem; color:var(--text-secondary);">AI Estimated Cashback Payout:</span>
+                                    <span id="sellEstimatedPrice" style="font-size:1.4rem; font-weight:700; color:var(--accent-green);">₹250</span>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn">Submit Request</button>
+                        </form>
+                    </div>
+
+                    <!-- Selling Request Status List -->
+                    <div class="card-box">
+                        <div class="card-title-bar">
+                            <h3>Selling Requests History</h3>
+                            <i class="fa-solid fa-clock-rotate-left"></i>
+                        </div>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Material</th>
+                                        <th>Weight</th>
+                                        <th>Estimated Price</th>
+                                        <th>Scheduled Pickup</th>
+                                        <th>Truck Assigned</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="citSellingTableBody">
+                                    <!-- Dynamic rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== CITIZEN: ECO-MARKETPLACE ==================== -->
+            <div id="citizen-marketplace" class="tab-panel">
+                <div class="grid-2col">
+                    
+                    <!-- Market Shopping items -->
+                    <div class="card-box" style="grid-column: span 1;">
+                        <div class="card-title-bar">
+                            <h3>Recycled Products Store</h3>
+                            <i class="fa-solid fa-store"></i>
+                        </div>
+                        <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:1rem;">
+                            Buy verified manufactured products recycled from organic waste, municipal plastic, and paper pulp.
+                        </p>
+                        
+                        <div id="marketCatalogGrid" class="market-catalog-grid">
+                            <!-- Dynamic Cards -->
+                        </div>
+                    </div>
+
+                    <!-- Cart and Shopping Orders -->
+                    <div class="flex-column-gap">
+                        
+                        <!-- Cart Widget -->
+                        <div class="card-box">
+                            <div class="card-title-bar">
+                                <h3>Shopping Cart</h3>
+                                <i class="fa-solid fa-cart-shopping"></i>
+                            </div>
+                            <div class="cart-items-list" id="cartItemsList">
+                                <p style="text-align:center; color:var(--text-secondary); font-size:0.85rem; padding:1.5rem 0;">Your cart is empty.</p>
+                            </div>
+                            <div class="detail-row" style="border-top:1px solid var(--border-color); padding-top:0.75rem;">
+                                <span class="detail-label">Total Payable Price:</span>
+                                <span class="detail-val" id="cartTotalVal" style="font-size:1.1rem; color:var(--accent-green);">₹0</span>
+                            </div>
+                            <button class="btn" id="cartCheckoutBtn" disabled onclick="checkoutCart()">Complete Purchase</button>
+                        </div>
+                        
+                        <!-- Order History Widget -->
+                        <div class="card-box">
+                            <div class="card-title-bar">
+                                <h3>Your Order History</h3>
+                                <i class="fa-solid fa-receipt"></i>
+                            </div>
+                            <div class="table-wrapper">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Order ID</th>
+                                            <th>Product Item</th>
+                                            <th>Qty</th>
+                                            <th>Price Paid</th>
+                                            <th>Shipping Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="citOrdersTableBody">
+                                        <!-- Dynamic Rows -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== CITIZEN: AI ECO-CHATBOT HELPER ==================== -->
+            <div id="citizen-bot" class="tab-panel">
+                <div class="card-box" style="max-width:800px; margin: 0 auto; width:100%;">
+                    <div class="card-title-bar">
+                        <h3>AI Waste Companion Bot</h3>
+                        <i class="fa-solid fa-robot" style="color:var(--accent-green);"></i>
+                    </div>
+                    <p style="font-size:0.85rem; color:var(--text-secondary);">
+                        Ask about nearest bin status, tracking your complaints, waste selling prices, or sorting instructions.
+                    </p>
+                    
+                    <div class="chatbot-box" style="margin-top:1rem;">
+                        <div class="chat-messages" id="chatMessages">
+                            <div class="chat-bubble bot">
+                                Hello! I am your AI Eco-Assistant. You can ask me questions like:
+                                <br>• "Where is the nearest bin?"
+                                <br>• "What is my latest complaint status?"
+                                <br>• "How much cashback do I get for selling plastic?"
+                                <br>• "Show recycling guide tips."
+                            </div>
+                        </div>
+                        <form class="chat-input-bar" onsubmit="sendChatMsg(event)">
+                            <input type="text" id="chatInput" placeholder="Ask something..." required autocomplete="off">
+                            <button type="submit"><i class="fa-solid fa-paper-plane"></i></button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- ==================== CUSTOM TOAST NOTIFICATION ==================== -->
+    <div id="toastNotification" class="toast-notification">
+        <i class="fa-solid fa-circle-check toast-icon" id="toastIcon"></i>
+        <span id="toastMessage">Telemetry updated successfully!</span>
+    </div>
+
+    <!-- App Frontend Logic -->
+    <!-- Eco Marketplace product photography, served via Flask static/url_for -->
+    <script>
+        const MARKETPLACE_PRODUCT_IMAGES = {
+            "Chair": "{{ url_for('static', filename='images/marketplace/recycled_plastic_chair.jpg') }}",
+            "Bucket": "{{ url_for('static', filename='images/marketplace/recycled_bucket.jpg') }}",
+            "Compost": "{{ url_for('static', filename='images/marketplace/organic_compost.jpg') }}",
+            "Notebook": "{{ url_for('static', filename='images/marketplace/recycled_notebook.jpg') }}",
+            "Scrap Metal": "{{ url_for('static', filename='images/marketplace/scrap_steel_rods.jpg') }}"
+        };
+    </script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
